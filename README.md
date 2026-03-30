@@ -16,8 +16,8 @@
 
 * Скопируйте проект из репозитория и откройте директорию с файлами:
 
-        git clone git@github.com:ANTIWARFIX/yan4
-        cd yan4
+       Git clone git@github.com:bazvada/BazdPraktikum.git
+        cd BazdPraktikum.git
 
 * Создайте отдельное виртуальное окружение для зависимостей проекта:
 
