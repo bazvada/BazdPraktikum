@@ -1,4 +1,4 @@
-from datetime import datetime
+from django.utils import timezone
 
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
@@ -36,7 +36,7 @@ def index(request):
     posts = get_posts(
         is_published=True,
         category__is_published=True,
-        pub_date__lte=datetime.now())
+        pub_date__lte=timezone.now())
     page_obj = get_paginator(request, posts)
     context = {'page_obj': page_obj}
     return render(request, 'blog/index.html', context)
@@ -51,7 +51,7 @@ def category_posts(request, category_slug):
     posts = get_posts(
         is_published=True,
         category__is_published=True,
-        pub_date__lte=datetime.now(),
+        pub_date__lte=timezone.now(),
         category=category)
     page_obj = get_paginator(request, posts)
     context = {'category': category,
@@ -61,15 +61,15 @@ def category_posts(request, category_slug):
 
 def post_detail(request, post_pk):
     """Отображение полного описания выбранной публикации"""
-    post = get_object_or_404(
-        Post,
-        pk=post_pk,
+    from django.db.models import Q
+    visibility = Q(
         is_published=True,
         category__is_published=True,
-        pub_date__lte=datetime.now()
-    ) if request.user.is_anonymous or not Post.objects.filter(
-        pk=post_pk, author=request.user
-    ).exists() else get_object_or_404(Post, pk=post_pk)
+        pub_date__lte=timezone.now()
+    )
+    if request.user.is_authenticated:
+        visibility |= Q(author=request.user)
+    post = get_object_or_404(Post, Q(pk=post_pk) & visibility)
     form = CommentForm(request.POST or None)
     comments = Comment.objects.select_related(
         'author').filter(post=post)
@@ -166,12 +166,13 @@ def profile(request, username):
     profile = get_object_or_404(
         User,
         username=username)
-    posts = get_posts(author=profile)
-    if request.user != profile:
+    if request.user == profile:
+        posts = get_posts(author=profile)
+    else:
         posts = get_posts(
             is_published=True,
             category__is_published=True,
-            pub_date__lte=datetime.now(),
+            pub_date__lte=timezone.now(),
             author=profile)
     page_obj = get_paginator(request, posts)
     context = {'profile': profile,
